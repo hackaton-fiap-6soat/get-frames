@@ -14,15 +14,26 @@ variable "output_s3_bucket" {
 }
 
 # Criar função Lambda usando o bucket de saída para armazenar o código
+
+# Package the Lambda function
+data "archive_file" "process_s3_files" {
+  type        = "zip"
+  source_dir  = "${path.module}/../lambda"
+  output_path = "${path.module}/get_frames.zip"
+}
+
 resource "aws_lambda_function" "process_s3_files" {
-  function_name    = "process_s3_files_lambda"
+  filename         = "${path.module}/get_frames.zip"
+  function_name    = "process_s3_files"
+  # role             = data.aws_iam_role.LabRole.arn
   handler          = "src/get_frames.lambda_handler"
   runtime          = "python3.10"
+  source_code_hash = data.archive_file.process_s3_files.output_base64sha256
+  timeout          = 10
   role             = data.aws_iam_role.lab_role.arn
-  timeout          = 30
   memory_size      = 256
-  s3_bucket        = var.output_s3_bucket
-  s3_key           = "get_frames.zip"
+  # s3_bucket        = var.output_s3_bucket
+  # s3_key           = "get_frames.zip"
 
   environment {
     variables = {
@@ -35,7 +46,31 @@ resource "aws_lambda_function" "process_s3_files" {
     Name        = "LambdaProcess"
     Environment = "Dev"
   }
+
+  depends_on = [ data.archive_file.process_s3_files ]
 }
+# resource "aws_lambda_function" "process_s3_files" {
+#   function_name    = "process_s3_files_lambda"
+#   handler          = "src/get_frames.lambda_handler"
+#   runtime          = "python3.10"
+#   role             = data.aws_iam_role.lab_role.arn
+#   timeout          = 30
+#   memory_size      = 256
+#   s3_bucket        = var.output_s3_bucket
+#   s3_key           = "get_frames.zip"
+
+#   environment {
+#     variables = {
+#       INPUT_BUCKET  = var.input_s3_bucket
+#       OUTPUT_BUCKET = var.output_s3_bucket
+#     }
+#   }
+
+#   tags = {
+#     Name        = "LambdaProcess"
+#     Environment = "Dev"
+#   }
+# }
 
 # Data source para obter a role LabRole do AWS Academy
 data "aws_iam_role" "lab_role" {
