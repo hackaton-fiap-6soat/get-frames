@@ -1,38 +1,39 @@
 provider "aws" {
-  region = "us-east-1"  # Ajuste para a região desejada
+  region = "us-east-1"  # Ajuste conforme necessário
 }
 
-# Criar bucket S3
-# resource "aws_s3_bucket" "s3_bucket" {
-#   bucket = "meu-bucket-de-arquivos"  # Nome único global
-
-#   tags = {
-#     Name        = "InputBucket"
-#     Environment = "Dev"
-#   }
-# }
-
-variable s3_bucket {
+# Variáveis para os buckets S3 preexistentes
+variable "input_s3_bucket" {
   type = string
+  description = "Bucket S3 de entrada que aciona a Lambda"
 }
 
-# Criar função Lambda
+variable "output_s3_bucket" {
+  type = string
+  description = "Bucket S3 de saída para armazenar os resultados"
+}
+
+# Criar função Lambda usando o bucket de saída para armazenar o código
 resource "aws_lambda_function" "process_s3_files" {
   function_name    = "process_s3_files_lambda"
-  handler          = "src/get_frames.py"
-  runtime          = "python3.10"  # Ajuste para o runtime necessário
+  handler          = "src/get_frames.lambda_handler"
+  runtime          = "python3.10"
   role             = data.aws_iam_role.lab_role.arn
   timeout          = 30
   memory_size      = 256
-
-  # # Carrega código a partir de um arquivo ZIP
-  # filename         = "lambda_function.zip"
-  # source_code_hash = filebase64sha256("lambda_function.zip")
+  s3_bucket        = var.output_s3_bucket
+  s3_key           = "get_frames.zip"
 
   environment {
     variables = {
-      BUCKET_NAME = var.s3_bucket
+      INPUT_BUCKET  = var.input_s3_bucket
+      OUTPUT_BUCKET = var.output_s3_bucket
     }
+  }
+
+  tags = {
+    Name        = "LambdaProcess"
+    Environment = "Dev"
   }
 }
 
@@ -41,18 +42,18 @@ data "aws_iam_role" "lab_role" {
   name = "LabRole"
 }
 
-# Permissão para que o S3 invoque a Lambda
+# Permissão para que o bucket de entrada invoque a Lambda
 resource "aws_lambda_permission" "allow_s3" {
   statement_id  = "AllowS3Invoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.process_s3_files.function_name
   principal     = "s3.amazonaws.com"
-  source_arn    = var.s3_bucket.arn
+  source_arn    = "arn:aws:s3:::${var.input_s3_bucket}"
 }
 
-# Configurar evento no bucket para chamar a Lambda quando novos arquivos forem criados
+# Configurar evento no bucket de entrada para acionar a Lambda
 resource "aws_s3_bucket_notification" "s3_event_trigger" {
-  bucket = var.s3_bucket.id
+  bucket = var.input_s3_bucket
 
   lambda_function {
     lambda_function_arn = aws_lambda_function.process_s3_files.arn
@@ -62,11 +63,15 @@ resource "aws_s3_bucket_notification" "s3_event_trigger" {
   depends_on = [aws_lambda_permission.allow_s3]
 }
 
-# Output para mostrar o bucket criado
-output "s3_bucket_name" {
-  value = var.s3_bucket
-}
-
+# Outputs para verificar os recursos criados/configurados
 output "lambda_function_name" {
   value = aws_lambda_function.process_s3_files.function_name
+}
+
+output "input_s3_bucket" {
+  value = var.input_s3_bucket
+}
+
+output "output_s3_bucket" {
+  value = var.output_s3_bucket
 }

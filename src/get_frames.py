@@ -4,7 +4,7 @@ import shutil
 import boto3
 import os
 import subprocess
-from utils import zip_frames
+from utils.utils import zip_frames
 from urllib.parse import unquote_plus
 s3 = boto3.client('s3')
 
@@ -14,6 +14,7 @@ ROOT_FRAMES_FOLDER = TEMPORARY_FOLDER + "frames/"
 # Quem chama a funcao, vai mandar o caminho do video (S3)
 
 def lambda_handler(event, context):
+    print("Recebido evento:", event)
     try:
         # Obter detalhes do arquivo a partir do evento
         bucket_name = event['queryStringParameters']['bucket']
@@ -52,14 +53,14 @@ def lambda_handler(event, context):
             Params={"Bucket": output_bucket, "Key": zip_key},
             ExpiresIn=3600*24  # URL válido por 24 horas
         )
+        
+        print("Arquivo ZIP disponível em:", zip_url)
 
-        return {
-            "statusCode": 200,
-            "body": f"Arquivo ZIP disponível em: {zip_url}"
-        }
+        # return {
+        #     "statusCode": 200,
+        #     "body": f"Arquivo ZIP disponível em: {zip_url}"
+        # }
 
     except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": f"Erro ao processar o arquivo: {str(e)}"
-        }
+        # Enviar SQS
+        print("Erro ao processar o arquivo:", str(e))

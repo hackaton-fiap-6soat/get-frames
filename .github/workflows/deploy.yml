@@ -31,11 +31,11 @@ jobs:
     
     - name: Terraform Plans
       working-directory: terraform
-      run: terraform plan -out=tfplan -var "s3_bucket=${TF_STATE_BUCKET}"
+      run: terraform plan -out=tfplan -var "output_s3_bucket=${TF_STATE_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}"
     
     - name: Apply Terraform
       working-directory: terraform
-      run: terraform apply -auto-approve -var "s3_bucket=${TF_STATE_BUCKET}"
+      run: terraform apply -auto-approve -var "output_s3_bucket=${TF_STATE_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}"
     
   aws_cli_:
     runs-on: ubuntu-latest
@@ -49,7 +49,7 @@ jobs:
       run: pip install -r requirements.txt
 
     - name: Zip Lambda function
-      run: zip -r get_frames.zip src/
+      run: zip -r get_frames.zip src/ utils/
     
     - name: Verify if the zip file exists
       run: test -f get_frames.zip && echo "Found file" || echo "Not found file"
@@ -84,15 +84,15 @@ jobs:
           sleep 10
         done
 
-    - name: Update Lambda Environment Configuration
-      run: |
-        VARIABLES=$(jq -n \
-          --arg COGNITO_CLIENT_ID "${{ secrets.COGNITO_CLIENT_ID }}" \
-          --arg COGNITO_DOMAIN "${{ secrets.COGNITO_DOMAIN }}" \
-          --arg COGNITO_REDIRECT_URI "${{ secrets.COGNITO_REDIRECT_URI }}" \
-          --arg COGNITO_USER_POOL_ID "${{ secrets.COGNITO_USER_POOL_ID }}" \
-          '{Variables: {COGNITO_CLIENT_ID: $COGNITO_CLIENT_ID, COGNITO_DOMAIN: $COGNITO_DOMAIN, COGNITO_REDIRECT_URI: $COGNITO_REDIRECT_URI, COGNITO_USER_POOL_ID: $COGNITO_USER_POOL_ID}}')
-        aws lambda update-function-configuration \
-        --function-name application_entry \
-        --environment "$VARIABLES"
+    # - name: Update Lambda Environment Configuration
+    #   run: |
+    #     VARIABLES=$(jq -n \
+    #       --arg COGNITO_CLIENT_ID "${{ secrets.COGNITO_CLIENT_ID }}" \
+    #       --arg COGNITO_DOMAIN "${{ secrets.COGNITO_DOMAIN }}" \
+    #       --arg COGNITO_REDIRECT_URI "${{ secrets.COGNITO_REDIRECT_URI }}" \
+    #       --arg COGNITO_USER_POOL_ID "${{ secrets.COGNITO_USER_POOL_ID }}" \
+    #       '{Variables: {COGNITO_CLIENT_ID: $COGNITO_CLIENT_ID, COGNITO_DOMAIN: $COGNITO_DOMAIN, COGNITO_REDIRECT_URI: $COGNITO_REDIRECT_URI, COGNITO_USER_POOL_ID: $COGNITO_USER_POOL_ID}}')
+    #     aws lambda update-function-configuration \
+    #     --function-name application_entry \
+    #     --environment "$VARIABLES"
           
