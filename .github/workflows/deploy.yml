@@ -9,8 +9,9 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-  TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+  OUTPUT_BUCKET: ${{ secrets.OUTPUT_BUCKET }}
   INPUT_BUCKET: ${{ secrets.INPUT_BUCKET }}
+  SQS_URL: ${{ secrets.SQS_URL }}
   AWS_DEFAULT_REGION: us-east-1
 
 jobs:
@@ -28,15 +29,15 @@ jobs:
 
     - name: Setup AWS CLI
       working-directory: terraform
-      run: terraform init -backend-config="bucket=${TF_STATE_BUCKET}" -backend-config="key=lambda.tfstate" -backend-config="region=us-east-1"
+      run: terraform init -backend-config="bucket=${OUTPUT_BUCKET}" -backend-config="key=lambda.tfstate" -backend-config="region=us-east-1"
     
     - name: Terraform Plans
       working-directory: terraform
-      run: terraform plan -out=tfplan -var "output_s3_bucket=${TF_STATE_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}"
+      run: terraform plan -out=tfplan -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "sqs=${SQS_URL}"
     
     - name: Apply Terraform
       working-directory: terraform
-      run: terraform apply -auto-approve -var "output_s3_bucket=${TF_STATE_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}"
+      run: terraform apply -auto-approve -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "sqs=${SQS_URL}"
     
   aws_cli_:
     runs-on: ubuntu-latest
@@ -64,13 +65,13 @@ jobs:
         aws-region: us-east-1
     
     - name: Upload to S3 (replace existing lambda.zip)
-      run: aws s3 cp get_frames.zip s3://${TF_STATE_BUCKET}/get_frames.zip --acl bucket-owner-full-control
+      run: aws s3 cp get_frames.zip s3://${OUTPUT_BUCKET}/get_frames.zip --acl bucket-owner-full-control
 
     - name: Update Lambda function code
       run: |
         aws lambda update-function-code \
         --function-name application_entry \
-        --s3-bucket ${TF_STATE_BUCKET} \
+        --s3-bucket ${OUTPUT_BUCKET} \
         --s3-key get_frames.zip \
     
     - name: Wait for Lambda to be ready

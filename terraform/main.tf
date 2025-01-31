@@ -1,3 +1,11 @@
+terraform {
+  backend "s3" {
+    bucket = "hackathon-6soat-processed-videos-bucket"
+    key    = "lambda.tfstate"
+    region = "us-east-1"
+  }
+}
+
 provider "aws" {
   region = "us-east-1"  # Ajuste conforme necessário
 }
@@ -13,7 +21,10 @@ variable "output_s3_bucket" {
   description = "Bucket S3 de saída para armazenar os resultados"
 }
 
-# Criar função Lambda usando o bucket de saída para armazenar o código
+variable "sqs" {
+  type = string
+  description = "SQS para envio de mensagens"
+}
 
 # Package the Lambda function
 data "archive_file" "process_s3_files" {
@@ -22,23 +33,33 @@ data "archive_file" "process_s3_files" {
   output_path = "${path.module}/get_frames.zip"
 }
 
+resource "aws_lambda_layer_version" "ffmpeg_layer" {
+  s3_bucket           = var.output_s3_bucket
+  s3_key              = "ffmpeg-layer.zip"
+  layer_name          = "ffmpeg"
+  compatible_runtimes = ["python3.10"]
+}
+
 resource "aws_lambda_function" "process_s3_files" {
   filename         = "${path.module}/get_frames.zip"
   function_name    = "process_s3_files"
-  # role             = data.aws_iam_role.LabRole.arn
   handler          = "src/get_frames.lambda_handler"
   runtime          = "python3.10"
   source_code_hash = data.archive_file.process_s3_files.output_base64sha256
-  timeout          = 10
+  timeout          = 900
   role             = data.aws_iam_role.lab_role.arn
-  memory_size      = 256
-  # s3_bucket        = var.output_s3_bucket
-  # s3_key           = "get_frames.zip"
+  memory_size      = 2048
+
+
+  layers = [aws_lambda_layer_version.ffmpeg_layer.arn]
+
 
   environment {
     variables = {
       INPUT_BUCKET  = var.input_s3_bucket
       OUTPUT_BUCKET = var.output_s3_bucket
+      FFMPEG_PATH   = "/opt/bin/ffmpeg"
+      SQS_URL       = var.sqs
     }
   }
 
@@ -48,29 +69,11 @@ resource "aws_lambda_function" "process_s3_files" {
   }
 
   depends_on = [ data.archive_file.process_s3_files ]
+
+  ephemeral_storage {
+    size = 2048 # Min 512 MB and the Max 10240 MB
+  }
 }
-# resource "aws_lambda_function" "process_s3_files" {
-#   function_name    = "process_s3_files_lambda"
-#   handler          = "src/get_frames.lambda_handler"
-#   runtime          = "python3.10"
-#   role             = data.aws_iam_role.lab_role.arn
-#   timeout          = 30
-#   memory_size      = 256
-#   s3_bucket        = var.output_s3_bucket
-#   s3_key           = "get_frames.zip"
-
-#   environment {
-#     variables = {
-#       INPUT_BUCKET  = var.input_s3_bucket
-#       OUTPUT_BUCKET = var.output_s3_bucket
-#     }
-#   }
-
-#   tags = {
-#     Name        = "LambdaProcess"
-#     Environment = "Dev"
-#   }
-# }
 
 # Data source para obter a role LabRole do AWS Academy
 data "aws_iam_role" "lab_role" {
