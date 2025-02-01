@@ -46,15 +46,11 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Setup AWS CLI
-      #working-directory: src
-      run: pip install -r requirements.txt
-
     - name: Zip Lambda function
-      run: zip -r get_frames.zip src/ utils/
+      run: zip -r video_processor.zip src/
     
     - name: Verify if the zip file exists
-      run: test -f get_frames.zip && echo "Found file" || echo "Not found file"
+      run: test -f video_processor.zip && echo "Found file" || echo "Not found file"
     
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -65,14 +61,14 @@ jobs:
         aws-region: us-east-1
     
     - name: Upload to S3 (replace existing lambda.zip)
-      run: aws s3 cp get_frames.zip s3://${OUTPUT_BUCKET}/get_frames.zip --acl bucket-owner-full-control
+      run: aws s3 cp video_processor.zip s3://${OUTPUT_BUCKET}/video_processor.zip --acl bucket-owner-full-control
 
     - name: Update Lambda function code
       run: |
         aws lambda update-function-code \
         --function-name application_entry \
         --s3-bucket ${OUTPUT_BUCKET} \
-        --s3-key get_frames.zip \
+        --s3-key video_processor.zip \
     
     - name: Wait for Lambda to be ready
       run: |

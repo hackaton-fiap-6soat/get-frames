@@ -30,7 +30,7 @@ variable "sqs" {
 data "archive_file" "process_s3_files" {
   type        = "zip"
   source_dir  = "${path.module}/../lambda"
-  output_path = "${path.module}/get_frames.zip"
+  output_path = "${path.module}/video_processor.zip"
 }
 
 resource "aws_lambda_layer_version" "ffmpeg_layer" {
@@ -41,9 +41,9 @@ resource "aws_lambda_layer_version" "ffmpeg_layer" {
 }
 
 resource "aws_lambda_function" "process_s3_files" {
-  filename         = "${path.module}/get_frames.zip"
+  filename         = "${path.module}/video_processor.zip"
   function_name    = "process_s3_files"
-  handler          = "src/get_frames.lambda_handler"
+  handler          = "src/main/entry_point/video_processor.process_video"
   runtime          = "python3.10"
   source_code_hash = data.archive_file.process_s3_files.output_base64sha256
   timeout          = 900
