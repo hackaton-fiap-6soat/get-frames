@@ -29,8 +29,8 @@ variable "sqs" {
 # Package the Lambda function
 data "archive_file" "process_s3_files" {
   type        = "zip"
-  source_dir  = "${path.module}/../lambda"
-  output_path = "${path.module}/video_processor.zip"
+  source_dir  = "${path.module}/../src"
+  output_path = "${path.module}/../video_processor.zip"
 }
 
 resource "aws_lambda_layer_version" "ffmpeg_layer" {
@@ -41,7 +41,7 @@ resource "aws_lambda_layer_version" "ffmpeg_layer" {
 }
 
 resource "aws_lambda_function" "process_s3_files" {
-  filename         = "${path.module}/video_processor.zip"
+  filename         = "${path.module}/../video_processor.zip"
   function_name    = "process_s3_files"
   handler          = "main.entry_point.video_processor.process_video"
   runtime          = "python3.10"
