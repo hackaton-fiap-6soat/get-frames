@@ -98,7 +98,10 @@ resource "aws_s3_bucket_notification" "s3_event_trigger" {
     events              = ["s3:ObjectCreated:*"]  # Invoca a Lambda ao adicionar arquivos
   }
 
-  depends_on = [aws_lambda_permission.allow_s3]
+  depends_on = [
+    aws_lambda_function.process_s3_files,  # Garante que a Lambda já foi criada
+    aws_lambda_permission.allow_s3
+  ]
 }
 
 # Outputs para verificar os recursos criados/configurados
