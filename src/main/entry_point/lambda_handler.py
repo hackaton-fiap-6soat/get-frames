@@ -1,7 +1,7 @@
-from src.main.adapters.sqs_adapter import SQSAdapter
-from src.main.adapters.s3_adapter import S3Adapter
-from src.main.adapters.ffmpeg_adapter import FFmpegAdapter
-from src.main.core.video_processor import VideoProcessor
+from main.adapters.sqs_adapter import SQSAdapter
+from main.adapters.s3_adapter import S3Adapter
+from main.adapters.ffmpeg_adapter import FFmpegAdapter
+from main.core.video_processor import VideoProcessor
 import os
 
 INPUT_BUCKET = os.environ['INPUT_BUCKET']
