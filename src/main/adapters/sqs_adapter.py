@@ -1,5 +1,5 @@
 import boto3
-from main.core.ports.messaging_port import MessagingPort
+from main.ports.messaging_port import MessagingPort
 
 class SQSAdapter(MessagingPort):
     def __init__(self):

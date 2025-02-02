@@ -1,4 +1,4 @@
-from main.core.ports.ffmpeg_port import FFmpegPort
+from main.ports.ffmpeg_port import FFmpegPort
 import os
 import subprocess
 

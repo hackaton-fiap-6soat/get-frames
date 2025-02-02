@@ -1,7 +1,7 @@
 import os
-from main.core.ports.storage_port import StoragePort
-from main.core.ports.ffmpeg_port import FFmpegPort
-from main.core.ports.messaging_port import MessagingPort
+from main.ports.storage_port import StoragePort
+from main.ports.ffmpeg_port import FFmpegPort
+from main.ports.messaging_port import MessagingPort
 from main.core.utils.messages_utils.type_message import TypeMessage
 
 TEMPORARY_FOLDER = "/tmp/"
