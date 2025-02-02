@@ -1,5 +1,5 @@
 import boto3
-from core.ports.messaging_port import MessagingPort
+from main.core.ports.messaging_port import MessagingPort
 
 class SQSAdapter(MessagingPort):
     def __init__(self):
@@ -13,7 +13,7 @@ class SQSAdapter(MessagingPort):
         except Exception as e:
             raise Exception("Erro ao enviar mensagem para o SQS:", str(e))
     
-    def build_message(message, type_message, user_uuid, file):
+    def build_message(self, message, type_message, user_uuid, file):
         return {
             "MessageBody": message,
             "MessageAttributes": {

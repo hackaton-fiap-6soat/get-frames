@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from core.utils.messages_utils.type_message import TypeMessage
+from main.core.utils.messages_utils.type_message import TypeMessage
 
 class MessagingPort(ABC):
     @abstractmethod

@@ -1,4 +1,4 @@
-from core.ports.storage_port import StoragePort
+from main.core.ports.storage_port import StoragePort
 import boto3
 import os
 import io

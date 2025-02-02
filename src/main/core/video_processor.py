@@ -1,8 +1,8 @@
 import os
-from core.ports.storage_port import StoragePort
-from core.ports.ffmpeg_port import FFmpegPort
-from core.ports.messaging_port import MessagingPort
-from core.utils.messages_utils.type_message import TypeMessage
+from main.core.ports.storage_port import StoragePort
+from main.core.ports.ffmpeg_port import FFmpegPort
+from main.core.ports.messaging_port import MessagingPort
+from main.core.utils.messages_utils.type_message import TypeMessage
 
 TEMPORARY_FOLDER = "/tmp/"
 ROOT_FRAMES_FOLDER = TEMPORARY_FOLDER + "frames/"
@@ -41,11 +41,12 @@ class VideoProcessor:
             url_expiration = 3600*24 # 1 day
             self.storage.generate_presigned_url(output_bucket=output_bucket, file_key=file_key + ".zip", expiration=url_expiration)
 
-            message = self.messaging.build_message(message="Arquivo zipado com sucesso!", type_message=TypeMessage.SUCCESS, user=file_key, file=file_key + ".zip")
+            message = self.messaging.build_message(message="Arquivo zipado com sucesso!", type_message=TypeMessage.SUCCESS, user_uuid=file_key, file=file_key + ".zip")
             self.messaging.send_message(SQS_URL, message)
 
         except Exception as e:
             self.messaging.build_message(message=str(e), type_message=TypeMessage.ERROR, user=file_key, file=file_key + ".zip")
+            self.messaging.send_message(SQS_URL, message)
             raise Exception("Erro ao processar o arquivo:", str(e))
         
     

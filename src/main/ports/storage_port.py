@@ -6,14 +6,6 @@ class StoragePort(ABC):
         pass
 
     @abstractmethod
-    def upload_file(self, bucket_name: str, file_key: str, local_path: str) -> None:
-        pass
-
-    @abstractmethod
-    def list_files(self, bucket_name: str, prefix: str) -> list:
-        pass
-
-    @abstractmethod
     def generate_presigned_url(self, bucket_name: str, file_key: str, expiration: int) -> str:
         pass
     
