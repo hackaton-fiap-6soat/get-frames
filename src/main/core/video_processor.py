@@ -39,13 +39,15 @@ class VideoProcessor:
             self.storage.zip_frames_on_s3(output_bucket=output_bucket, frames_folder=folder_name, output_zip_key=output_zip_key)
 
             url_expiration = 3600*24 # 1 day
-            self.storage.generate_presigned_url(output_bucket=output_bucket, file_key=file_key + ".zip", expiration=url_expiration)
+            zip_url =self.storage.generate_presigned_url(output_bucket=output_bucket, file_key=file_key + ".zip", expiration=url_expiration)
 
-            message = self.messaging.build_message(message="Arquivo zipado com sucesso!", type_message=TypeMessage.SUCCESS, user_uuid=file_key, file=file_key + ".zip")
+            return_message = "Arquivo zipado com sucesso! Você pode acessar o arquivo em: " + zip_url
+            message = self.messaging.build_message(message=return_message, type_message=TypeMessage.SUCCESS, user_uuid=file_key, file=file_key + ".zip")
             self.messaging.send_message(SQS_URL, message)
 
         except Exception as e:
-            self.messaging.build_message(message=str(e), type_message=TypeMessage.ERROR, user=file_key, file=file_key + ".zip")
+            fail_message = "Ocorreu um erro ao processar o arquivo. Tente novamente em alguns instantes. Detalhes: " + str(e)
+            self.messaging.build_message(message=fail_message, type_message=TypeMessage.ERROR, user=file_key, file=file_key + ".zip")
             self.messaging.send_message(SQS_URL, message)
             raise Exception("Erro ao processar o arquivo:", str(e))
         

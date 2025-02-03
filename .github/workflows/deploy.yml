@@ -3,7 +3,7 @@ name: Deploy Lambda
 on:
   push:
     branches:
-      - '*'
+      - 'main'
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
