@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from main.core.utils.messages_utils.type_message import TypeMessage
 
 class MessagingPort(ABC):
     @abstractmethod
@@ -7,5 +6,5 @@ class MessagingPort(ABC):
         pass
     
     @abstractmethod
-    def build_message(self, message: str, type_message: TypeMessage, user_uuid: str, file: str) -> dict:
+    def build_message(self, message_attributes: dict) -> dict:
         pass

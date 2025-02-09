@@ -47,25 +47,33 @@ a fim de poupar o processamento, mantendo a qualidade e velocidade na entrega.
 
     2.5. `INPUT_BUCKET` (bucket de entrada, onde os vídeos serão armazenados antes do processamento)
 
-    2.6. `SQS_URL` (URL do serviço SQS)
+    2.6. `USER_SQS_URL` (URL SQS serviço de mensageria para usuário)
+
+    2.7. `PROCESS_TRACKING_SQS_URL` (URL SQS para serviço de acompanhamento de processo)
 
     2.7. `AWS_DEFAULT_REGION`
 
-3. Suba o projeto com o terraform:
+3. Adicione a dependência do `ffmpeg` ao bucket:
+```bash
+cd git-frames
+aws s3 cp ffmpeg-layer.zip s3://hackathon-6soat-processed-videos-bucket/ffmpeg-layer.zip
+```
 
-    3.1. Init:
+4. Suba o projeto com o terraform:
+
+    4.1. Init:
     ```bash
     terraform init -backend-config="bucket=${OUTPUT_BUCKET}" -backend-config="key=lambda.tfstate" -backend-config="region=us-east-1"
     ```
 
-    3.2. Plan:
+    4.2. Plan:
     ```bash
-    terraform plan -out=tfplan -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "sqs=${SQS_URL}"
+    terraform plan -out=tfplan -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "user_sqs=${USER_SQS_URL}" -var "process_tracking_sqs_url=${PROCESS_TRACKING_SQS_URL}"
     ```
 
-    3.3. Apply:
+    4.3. Apply:
     ```bash
-    terraform apply -auto-approve -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "sqs=${SQS_URL}"
+    terraform apply -auto-approve -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "user_sqs=${USER_SQS_URL}" -var "process_tracking_sqs_url=${PROCESS_TRACKING_SQS_URL}"
     ```
 
 ## Testando com Github Actions

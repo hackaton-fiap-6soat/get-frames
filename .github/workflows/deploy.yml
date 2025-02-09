@@ -11,7 +11,8 @@ env:
   AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
   OUTPUT_BUCKET: ${{ secrets.OUTPUT_BUCKET }}
   INPUT_BUCKET: ${{ secrets.INPUT_BUCKET }}
-  SQS_URL: ${{ secrets.SQS_URL }}
+  USER_SQS_URL: ${{ secrets.USER_SQS_URL }}
+  PROCESS_TRACKING_SQS_URL: ${{ secrets.PROCESS_TRACKING_SQS_URL }}
   AWS_DEFAULT_REGION: us-east-1
 
 jobs:
@@ -26,18 +27,21 @@ jobs:
       uses: hashicorp/setup-terraform@v1
       with:
         terraform_version: 1.5.0
+    
+    - name: Create Bucket
+      run: aws s3api create-bucket --bucket ${OUTPUT_BUCKET} --region us-east-1
 
     - name: Setup AWS CLI
       working-directory: terraform
       run: terraform init -backend-config="bucket=${OUTPUT_BUCKET}" -backend-config="key=lambda.tfstate" -backend-config="region=us-east-1"
-    
+
     - name: Terraform Plans
       working-directory: terraform
-      run: terraform plan -out=tfplan -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "sqs=${SQS_URL}"
+      run: terraform plan -out=tfplan -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "user_sqs=${USER_SQS_URL}" -var "process_tracking_sqs_url=${PROCESS_TRACKING_SQS_URL}"
     
     - name: Apply Terraform
       working-directory: terraform
-      run: terraform apply -auto-approve -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "sqs=${SQS_URL}"
+      run: terraform apply -auto-approve -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "user_sqs=${USER_SQS_URL}" -var "process_tracking_sqs_url=${PROCESS_TRACKING_SQS_URL}"
     
   aws_cli_:
     runs-on: ubuntu-latest
