@@ -21,9 +21,46 @@ variable "output_s3_bucket" {
   description = "Bucket S3 de saída para armazenar os resultados"
 }
 
-variable "sqs" {
+variable "user_sqs" {
   type = string
   description = "SQS para envio de mensagens"
+}
+
+variable "process_tracking_sqs_url" {
+  type = string
+  description = "SQS para envio de mensagens"
+}
+
+data "aws_vpc" "hackathon-vpc" {
+  filter {
+    name   = "tag:Name"
+    values = ["hackathon-vpc"]
+  }
+}
+
+data "aws_subnets" "private_subnets" {
+  filter {
+    name = "vpc-id"
+    values = [data.aws_vpc.hackathon-vpc.id]
+  }
+
+  filter {
+    name = "tag:Name"
+    values = ["*private*"]
+  }
+}
+
+resource "aws_security_group" "lambda" {
+  name        = "lambda_sg"
+  description = "Security group for Lambda"
+  vpc_id      = data.aws_vpc.hackathon-vpc.id
+
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "TCP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 # Package the Lambda function
@@ -50,17 +87,21 @@ resource "aws_lambda_function" "process_s3_files" {
   role             = data.aws_iam_role.lab_role.arn
   memory_size      = 2048
 
-
   layers = [aws_lambda_layer_version.ffmpeg_layer.arn]
-
 
   environment {
     variables = {
       INPUT_BUCKET  = var.input_s3_bucket
       OUTPUT_BUCKET = var.output_s3_bucket
       FFMPEG_PATH   = "/opt/bin/ffmpeg"
-      SQS_URL       = var.sqs
+      USER_SQS_URL  = var.user_sqs
+      PROCESS_TRACKING_SQS_URL = var.process_tracking_sqs_url
     }
+  }
+
+  vpc_config {
+    subnet_ids = data.aws_subnets.private_subnets.ids
+    security_group_ids = [aws_security_group.lambda.id]
   }
 
   tags = {
