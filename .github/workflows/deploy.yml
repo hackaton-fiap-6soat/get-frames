@@ -28,60 +28,13 @@ jobs:
       with:
         terraform_version: 1.5.0
     
-    - name: Create Bucket
-      run: aws s3api create-bucket --bucket ${OUTPUT_BUCKET} --region us-east-1
+    - name: Upload ffmpeg dependency to infra bucket
+      run: aws s3 cp ffmpeg-layer.zip s3://${TF_STATE_BUCKET}/ffmpeg-layer.zip
 
-    - name: Setup AWS CLI
+    - name: Terraform Init
       working-directory: terraform
-      run: terraform init -backend-config="bucket=${OUTPUT_BUCKET}" -backend-config="key=lambda.tfstate" -backend-config="region=us-east-1"
-
-    - name: Terraform Plans
-      working-directory: terraform
-      run: terraform plan -out=tfplan -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "user_sqs=${USER_SQS_URL}" -var "process_tracking_sqs_url=${PROCESS_TRACKING_SQS_URL}"
+      run: terraform init -backend-config="bucket=${TF_STATE_BUCKET}" -backend-config="key=lambda.tfstate" -backend-config="region=us-east-1"
     
     - name: Apply Terraform
       working-directory: terraform
-      run: terraform apply -auto-approve -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${INPUT_BUCKET}" -var "user_sqs=${USER_SQS_URL}" -var "process_tracking_sqs_url=${PROCESS_TRACKING_SQS_URL}"
-    
-  aws_cli_:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Zip Lambda function
-      run: zip -r video_processor.zip src/
-    
-    - name: Verify if the zip file exists
-      run: test -f video_processor.zip && echo "Found file" || echo "Not found file"
-    
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region: us-east-1
-    
-    - name: Upload to S3 (replace existing lambda.zip)
-      run: aws s3 cp video_processor.zip s3://${OUTPUT_BUCKET}/video_processor.zip --acl bucket-owner-full-control
-
-    - name: Update Lambda function code
-      run: |
-        aws lambda update-function-code \
-        --function-name process_s3_files \
-        --s3-bucket ${OUTPUT_BUCKET} \
-        --s3-key video_processor.zip \
-    
-    - name: Wait for Lambda to be ready
-      run: |
-        while true; do
-          STATUS=$(aws lambda get-function --function-name process_s3_files --query 'Configuration.LastUpdateStatus' --output text)
-          echo "Current status: $STATUS"
-          if [ "$STATUS" != "InProgress" ]; then
-            break
-          fi
-          echo "Waiting for the function to be ready..."
-          sleep 10
-        done
+      run: terraform apply -auto-approve -var "tf_state_bucket=${TF_STATE_BUCKET}" -var "output_s3_bucket=${OUTPUT_BUCKET}" -var "input_s3_bucket=${UPLOAD_DESTINATION_BUCKET}" -var "user_sqs=${USER_SQS_URL}" -var "process_tracking_sqs_url=${SQS_URL}"
