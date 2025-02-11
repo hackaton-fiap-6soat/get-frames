@@ -14,6 +14,7 @@ env:
   USER_SQS_URL: ${{ secrets.USER_SQS_URL }}
   PROCESS_TRACKING_SQS_URL: ${{ secrets.PROCESS_TRACKING_SQS_URL }}
   AWS_DEFAULT_REGION: us-east-1
+  TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
 
 jobs:
   deploy:
