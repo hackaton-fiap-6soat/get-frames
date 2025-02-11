@@ -9,13 +9,16 @@ class UserSQSAdapter(MessagingPort):
     def send_message(self, queue_url, message):
         sqs = boto3.client('sqs')
         try:
+            print("Enviando mensagem para o SQS ", queue_url)
             sqs.send_message(QueueUrl=queue_url, **message)
             print("Mensagem enviada para o SQS com sucesso.")
         except Exception as e:
             raise Exception("Erro ao enviar mensagem para o SQS:", str(e))
     
     def build_message(self, message_attributes):
-        link_arquivo = message_attributes["link_arquivo"] if hasattr(message_attributes, "link_arquivo") else None
+        # link_arquivo = message_attributes["link_arquivo"] if hasattr(message_attributes, "link_arquivo") else None
+        print("Construindo mensagem para o SQS...")
+        link_arquivo = message_attributes.get("link_arquivo")
         return {
             "MessageBody": json.dumps({
                 "id_usuario": message_attributes["id_usuario"],

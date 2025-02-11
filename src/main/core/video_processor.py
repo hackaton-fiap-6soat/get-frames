@@ -33,8 +33,6 @@ class VideoProcessor:
 
             output_zip_key = folder_name + "/" + file_name + ".zip"
 
-            self.storage.upload_extracted_frames(frames_folder=new_folder_name, output_bucket=output_bucket, output_folder=folder_name)
-
             self.storage.zip_frames_on_s3(output_bucket=output_bucket, frames_folder=folder_name, output_zip_key=output_zip_key)
 
             url_expiration = 3600*24 # 1 day

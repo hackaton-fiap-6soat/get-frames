@@ -11,6 +11,12 @@ provider "aws" {
 }
 
 # Variáveis para os buckets S3 preexistentes
+
+variable "tf_state_bucket" {
+  type = string
+  description = "Bucket S3 de artefatos para a Lambda"
+}
+
 variable "input_s3_bucket" {
   type = string
   description = "Bucket S3 de entrada que aciona a Lambda"
@@ -34,7 +40,7 @@ variable "process_tracking_sqs_url" {
 data "aws_vpc" "hackathon-vpc" {
   filter {
     name   = "tag:Name"
-    values = ["hackathon-vpc"]
+    values = ["fiap-hackathon-vpc"]
   }
 }
 
@@ -49,6 +55,12 @@ data "aws_subnets" "private_subnets" {
     values = ["*private*"]
   }
 }
+
+resource "aws_s3_bucket" "output_s3_bucket" {
+  bucket = var.output_s3_bucket
+  force_destroy = true
+}
+
 
 resource "aws_security_group" "lambda" {
   name        = "lambda_sg"
@@ -71,7 +83,7 @@ data "archive_file" "process_s3_files" {
 }
 
 resource "aws_lambda_layer_version" "ffmpeg_layer" {
-  s3_bucket           = var.output_s3_bucket
+  s3_bucket           = var.tf_state_bucket
   s3_key              = "ffmpeg-layer.zip"
   layer_name          = "ffmpeg"
   compatible_runtimes = ["python3.10"]
@@ -92,7 +104,7 @@ resource "aws_lambda_function" "process_s3_files" {
   environment {
     variables = {
       INPUT_BUCKET  = var.input_s3_bucket
-      OUTPUT_BUCKET = var.output_s3_bucket
+      OUTPUT_BUCKET = aws_s3_bucket.output_s3_bucket.bucket
       FFMPEG_PATH   = "/opt/bin/ffmpeg"
       USER_SQS_URL  = var.user_sqs
       PROCESS_TRACKING_SQS_URL = var.process_tracking_sqs_url
